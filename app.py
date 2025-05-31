@@ -1,30 +1,38 @@
-
-from flask import Flask, request, jsonify
+from flask import Flask, render_template, request, send_file
 import yt_dlp
+import os
+import uuid
 
 app = Flask(__name__)
 
-@app.route("/download", methods=["POST"])
+DOWNLOAD_FOLDER = "downloads"
+os.makedirs(DOWNLOAD_FOLDER, exist_ok=True)
+
+@app.route('/')
+def index():
+    return render_template("index.html")
+
+@app.route('/download', methods=['POST'])
 def download():
-    data = request.get_json()
-    url = data.get("url")
-    if not url:
-        return jsonify({"error": "No URL provided"}), 400
+    url = request.form['url']
+    format_type = request.form.get('format', 'video')
+    filename = str(uuid.uuid4()) + ('.mp4' if format_type == 'video' else '.mp3')
+    filepath = os.path.join(DOWNLOAD_FOLDER, filename)
 
     ydl_opts = {
-        'format': 'best',
-        'outtmpl': '%(title)s.%(ext)s',
-        'noplaylist': True
+        'outtmpl': filepath,
+        'format': 'bestvideo+bestaudio' if format_type == 'video' else 'bestaudio',
+        'postprocessors': [{
+            'key': 'FFmpegExtractAudio',
+            'preferredcodec': 'mp3',
+            'preferredquality': '192',
+        }] if format_type == 'audio' else []
     }
 
-    try:
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(url, download=True)
-            return jsonify({"status": "Downloaded", "title": info.get("title", "Unknown")})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        ydl.download([url])
 
-if __name__ == "__main__":
-    import os
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
+    return send_file(filepath, as_attachment=True)
+
+if __name__ == '__main__':
+    app.run()
