@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Скачать с YouTube</title>
+</head>
+<body>
+    <h1>Скачивание видео / аудио с YouTube</h1>
+    <form action="/download" method="POST">
+        <input type="text" name="url" placeholder="Вставьте ссылку" required style="width: 300px;">
+        <select name="format">
+            <option value="video">Видео</option>
+            <option value="audio">Аудио (MP3)</option>
+        </select>
+        <button type="submit">Скачать</button>
+    </form>
+</body>
+</html>
